@@ -2,22 +2,38 @@
 
 Quick reference guide to all documentation files.
 
-## 🚀 Getting Started (Read in Order)
+## ⭐ **START HERE**
 
-1. **[GET_STARTED.md](GET_STARTED.md)** ⭐ START HERE
-   - Your first 5 minutes with the platform
-   - What you have and what to do next
-   - Quick command reference
+**[START_HERE.md](START_HERE.md)** - Your 10-minute quick start guide
 
-2. **[QUICKSTART.md](QUICKSTART.md)**
-   - Complete setup in 5 minutes
-   - Step-by-step first-time setup
-   - Troubleshooting common issues
+---
 
-3. **[CHECKLIST.md](CHECKLIST.md)**
-   - Pre-launch verification checklist
-   - Safety checks before trading
-   - Testing requirements
+## 🚀 Getting Started
+
+### 🐳 Docker Setup (Recommended - Easiest!)
+
+1. **[DOCKER_QUICKSTART.md](DOCKER_QUICKSTART.md)** - Complete Docker guide
+2. **[DOCKER_SETUP_COMPLETE.md](DOCKER_SETUP_COMPLETE.md)** - What's included
+
+**Why Docker?**
+- ✅ No PostgreSQL/Redis installation
+- ✅ One command to start everything
+- ✅ Works on any system
+- ✅ Easy cleanup
+
+### 📦 Manual Setup (Advanced Users)
+
+1. **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Detailed manual installation
+2. **[QUICKSTART.md](QUICKSTART.md)** - Quick manual setup
+
+**When to use:**
+- You prefer manual control
+- You already have PostgreSQL/Redis
+- You want to customize everything
+
+### ✅ Safety & Testing
+
+**[CHECKLIST.md](CHECKLIST.md)** - Pre-launch verification (READ BEFORE TRADING!)
 
 ## 📖 Main Documentation
 

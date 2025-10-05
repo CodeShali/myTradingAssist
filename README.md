@@ -289,28 +289,10 @@ docker-compose up -d
 ## 🧪 Testing
 
 ```bash
-# Run all tests
-npm run test
-
-# Run specific test suites
-npm run test:unit
-npm run test:integration
-npm run test:e2e
-
-# Python tests
-cd backend/trading_engine
-pytest
-```
-
-## 📈 Performance Monitoring
-
-- **Grafana Dashboard**: `http://localhost:3001`
 - **Prometheus Metrics**: `http://localhost:9090`
 - **Application Logs**: `logs/` directory
 
 ## 🔒 Security
-
-- All API keys stored in environment variables
 - JWT authentication for API access
 - Encrypted database connections
 - Rate limiting on all endpoints

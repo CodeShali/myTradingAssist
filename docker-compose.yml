@@ -6,34 +6,40 @@ services:
     image: postgres:15-alpine
     container_name: trading_postgres
     environment:
-      POSTGRES_DB: trading_platform
-      POSTGRES_USER: trading_user
+      POSTGRES_USER: ${POSTGRES_USER:-trading_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-trading_platform}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - trading_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U trading_user"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
-  # Redis Cache and Queue
+  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: trading_redis
+    command: redis-server --appendonly yes
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    networks:
+      - trading_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   # Trading Engine (Python)
   trading_engine:
@@ -46,17 +52,20 @@ services:
       REDIS_URL: redis://redis:6379
       ALPACA_API_KEY: ${ALPACA_API_KEY}
       ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY}
+      ALPACA_BASE_URL: ${ALPACA_BASE_URL:-https://paper-api.alpaca.markets}
       POLYGON_API_KEY: ${POLYGON_API_KEY}
       NEWS_API_KEY: ${NEWS_API_KEY}
       TRADING_MODE: ${TRADING_MODE:-paper}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - ./backend/trading_engine:/app
       - ./logs:/app/logs
+    networks:
+      - trading_network
     restart: unless-stopped
 
   # API Gateway (Node.js)
@@ -69,8 +78,10 @@ services:
       DATABASE_URL: postgresql://trading_user:${POSTGRES_PASSWORD:-changeme}@postgres:5432/trading_platform
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
       PORT: 3000
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
+      FRONTEND_URL: http://localhost:3001
     ports:
       - "3000:3000"
     depends_on:
@@ -79,8 +90,9 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend/api_gateway:/app
       - ./logs:/app/logs
+    networks:
+      - trading_network
     restart: unless-stopped
 
   # Discord Bot (Node.js)
@@ -94,13 +106,14 @@ services:
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
       API_GATEWAY_URL: http://api_gateway:3000
       REDIS_URL: redis://redis:6379
-      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       - api_gateway
       - redis
     volumes:
-      - ./backend/discord_bot:/app
       - ./logs:/app/logs
+    networks:
+      - trading_network
     restart: unless-stopped
 
   # Frontend (React)
@@ -108,51 +121,24 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3000
+        VITE_WS_URL: ws://localhost:3000
     container_name: trading_frontend
-    environment:
-      REACT_APP_API_URL: http://localhost:3000
-      REACT_APP_WS_URL: ws://localhost:3000
     ports:
-      - "80:80"
+      - "3001:80"
     depends_on:
       - api_gateway
+    networks:
+      - trading_network
     restart: unless-stopped
 
-  # Prometheus (Monitoring)
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: trading_prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-    restart: unless-stopped
-
-  # Grafana (Visualization)
-  grafana:
-    image: grafana/grafana:latest
-    container_name: trading_grafana
-    ports:
-      - "3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
-    depends_on:
-      - prometheus
-    restart: unless-stopped
+networks:
+  trading_network:
+    driver: bridge
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
-  prometheus_data:
-  grafana_data:
-
-networks:
-  default:
-    name: trading_network
+    driver: local
