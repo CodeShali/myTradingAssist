@@ -6,6 +6,9 @@ import signal
 import sys
 from typing import Optional
 from loguru import logger
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from core import setup_logger, check_db_connection, redis_manager
@@ -13,6 +16,7 @@ from services.signal_generator import SignalGenerator
 from services.position_manager import PositionManager
 from services.market_data_service import MarketDataService
 from services.execution_service import ExecutionService
+from api.routes import router as api_router
 
 
 class TradingEngine:
@@ -203,7 +207,36 @@ async def main():
         logger.info("Trading Engine shutdown complete")
 
 
+def create_app() -> FastAPI:
+    """Create FastAPI application"""
+    app = FastAPI(title="Trading Engine API")
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    app.include_router(api_router)
+    
+    return app
+
+app = create_app()
+
 if __name__ == "__main__":
+    # Run both FastAPI server and trading engine
+    import threading
+    
+    # Start FastAPI server in a separate thread
+    def run_api():
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    
+    api_thread = threading.Thread(target=run_api, daemon=True)
+    api_thread.start()
+    
+    # Run trading engine in main thread
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

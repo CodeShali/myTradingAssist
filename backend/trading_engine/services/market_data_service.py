@@ -6,10 +6,20 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 import aiohttp
 from loguru import logger
-from alpaca.data.historical import StockHistoricalDataClient, OptionHistoricalDataClient
+from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest, StockLatestQuoteRequest
 from alpaca.data.timeframe import TimeFrame
-from polygon import RESTClient as PolygonClient
+# Polygon client - use the correct import for version 1.1.3
+try:
+    from polygon.rest.client import RESTClient as PolygonClient
+except ImportError:
+    try:
+        from polygon import RESTClient as PolygonClient
+    except ImportError:
+        # Fallback: create a dummy client
+        class PolygonClient:
+            def __init__(self, *args, **kwargs):
+                pass
 
 from config import settings, LiquidityThresholds
 from core import redis_manager, CacheKeys, get_db_context

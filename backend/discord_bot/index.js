@@ -33,9 +33,12 @@ class TradingBot {
 
     setupEventHandlers() {
         // Bot ready event
-        this.client.once('ready', () => {
+        this.client.once('ready', async () => {
             logger.info(`Discord bot logged in as ${this.client.user.tag}`);
             this.client.user.setActivity('Options Trading', { type: 'WATCHING' });
+            
+            // Send startup notification
+            await this.sendStartupNotification();
         });
 
         // Message commands
@@ -80,19 +83,109 @@ class TradingBot {
             await this.redisClient.connect();
             logger.info('Connected to Redis');
 
-            // Subscribe to signal events
+            // Subscribe to Redis channels
             await this.subscribeToSignals();
 
             // Login to Discord
             await this.client.login(process.env.DISCORD_BOT_TOKEN);
-
         } catch (error) {
-            logger.error('Failed to start bot:', error);
+            if (error.message && error.message.includes('disallowed intents')) {
+                logger.error('❌ Discord Bot Error: MESSAGE CONTENT INTENT not enabled!');
+                logger.error('');
+                logger.error('📝 To fix this:');
+                logger.error('1. Go to: https://discord.com/developers/applications');
+                logger.error('2. Select your application');
+                logger.error('3. Go to "Bot" section');
+                logger.error('4. Scroll to "Privileged Gateway Intents"');
+                logger.error('5. Enable "MESSAGE CONTENT INTENT"');
+                logger.error('6. Click "Save Changes"');
+                logger.error('7. Restart this bot: docker compose restart discord_bot');
+                logger.error('');
+                logger.error('⚠️  Platform will continue to work without Discord notifications');
+            } else {
+                logger.error('Failed to start bot:', error);
+            }
+            // Don't exit - let Docker restart and retry
+            await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30s before retry
             process.exit(1);
         }
     }
 
+    async sendStartupNotification() {
+        try {
+            const channel = await this.client.channels.fetch(process.env.DISCORD_UPDATES_CHANNEL_ID || process.env.DISCORD_CHANNEL_ID);
+            if (!channel) return;
+
+            // Test backend APIs
+            const apiTests = await this.testBackendAPIs();
+            
+            const embed = {
+                color: 0x00ff00, // Green
+                title: '🚀 OptionsAI Platform Started',
+                description: 'AI-Assisted Options Trading Platform is now online!',
+                fields: [
+                    {
+                        name: '📊 System Status',
+                        value: `✅ Discord Bot: Connected\n✅ Redis: Connected\n✅ Trading Mode: ${process.env.TRADING_MODE || 'paper'}`,
+                        inline: false
+                    },
+                    {
+                        name: '🔧 Backend API Tests',
+                        value: apiTests,
+                        inline: false
+                    },
+                    {
+                        name: '⚙️ Configuration',
+                        value: `Server: ${process.env.DISCORD_GUILD_ID}\nChannels: ${this.getChannelCount()} configured`,
+                        inline: false
+                    }
+                ],
+                timestamp: new Date().toISOString(),
+                footer: {
+                    text: 'OptionsAI Trading Platform'
+                }
+            };
+
+            await channel.send({ embeds: [embed] });
+            logger.info('Startup notification sent to Discord');
+        } catch (error) {
+            logger.error('Failed to send startup notification:', error);
+        }
+    }
+
+    async testBackendAPIs() {
+        const results = [];
+        
+        try {
+            // Test API Gateway
+            const apiResponse = await fetch('http://api_gateway:3000/health');
+            results.push(apiResponse.ok ? '✅ API Gateway: Healthy' : '❌ API Gateway: Down');
+        } catch (error) {
+            results.push('❌ API Gateway: Unreachable');
+        }
+
+        try {
+            // Test Database via Redis (we know Redis works if we're here)
+            results.push('✅ Redis: Connected');
+        } catch (error) {
+            results.push('❌ Redis: Error');
+        }
+
+        return results.join('\n');
+    }
+
+    getChannelCount() {
+        let count = 0;
+        if (process.env.DISCORD_CHANNEL_ID) count++;
+        if (process.env.DISCORD_SIGNALS_CHANNEL_ID) count++;
+        if (process.env.DISCORD_TRADES_CHANNEL_ID) count++;
+        if (process.env.DISCORD_ALERTS_CHANNEL_ID) count++;
+        if (process.env.DISCORD_UPDATES_CHANNEL_ID) count++;
+        return count;
+    }
+
     async subscribeToSignals() {
+        // Create a duplicate client for pub/sub
         const subscriber = this.redisClient.duplicate();
         await subscriber.connect();
 

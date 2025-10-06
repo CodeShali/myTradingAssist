@@ -140,4 +140,33 @@ router.get('/verify', async (req, res, next) => {
     }
 });
 
+// Get user profile
+router.get('/profile', async (req, res, next) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
+        }
+        
+        const jwt = await import('jsonwebtoken');
+        const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
+        
+        // Get user from database
+        const result = await query(
+            'SELECT id, username, email, trading_mode, is_active, created_at FROM users WHERE id = $1',
+            [decoded.userId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json(result.rows[0]);
+        
+    } catch (error) {
+        next(error);
+    }
+});
+
 export default router;

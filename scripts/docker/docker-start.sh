@@ -16,7 +16,9 @@ MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the actual project root (two levels up from this script)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 LOG_FILE="$PROJECT_ROOT/logs/docker-startup.log"
@@ -143,8 +145,9 @@ if [ -f "$ENV_FILE" ]; then
     
     MISSING_VARS=0
     for var in "${REQUIRED_VARS[@]}"; do
-        if [ -z "${!var}" ] || [ "${!var}" = "your_"* ]; then
-            print_warning "$var is not configured"
+        value="${!var}"
+        if [ -z "$value" ] || [ "$value" = "your_"* ] || [ ${#value} -lt 10 ]; then
+            print_warning "$var is not configured (empty or placeholder)"
             MISSING_VARS=1
         else
             print_success "$var is configured"

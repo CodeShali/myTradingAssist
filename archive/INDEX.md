@@ -33,7 +33,8 @@ Quick reference guide to all documentation files.
 
 ### ✅ Safety & Testing
 
-**[CHECKLIST.md](CHECKLIST.md)** - Pre-launch verification (READ BEFORE TRADING!)
+- **[CHECKLIST.md](CHECKLIST.md)** - Pre-launch verification (READ BEFORE TRADING!)
+- **[API_KEYS_GUIDE.md](API_KEYS_GUIDE.md)** - Paper vs Live API keys (IMPORTANT!)
 
 ## 📖 Main Documentation
 

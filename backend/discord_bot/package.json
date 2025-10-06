@@ -24,7 +24,8 @@
     "redis": "^4.6.11",
     "pg": "^8.11.3",
     "winston": "^3.11.0",
-    "date-fns": "^2.30.0"
+    "date-fns": "^2.30.0",
+    "openai": "^4.20.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",

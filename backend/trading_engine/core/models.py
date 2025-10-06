@@ -32,8 +32,8 @@ class User(Base):
     
     # Relationships
     configs = relationship("UserConfig", back_populates="user", cascade="all, delete-orphan")
-    signals = relationship("TradeSignal", back_populates="user", cascade="all, delete-orphan")
-    positions = relationship("Position", back_populates="user", cascade="all, delete-orphan")
+    signals = relationship("TradeSignal", back_populates="user", foreign_keys="[TradeSignal.user_id]", cascade="all, delete-orphan")
+    positions = relationship("Position", back_populates="user", foreign_keys="[Position.user_id]", cascade="all, delete-orphan")
     watchlists = relationship("Watchlist", back_populates="user", cascade="all, delete-orphan")
     
     __table_args__ = (

@@ -21,6 +21,8 @@ import positionRoutes from './routes/positions.js';
 import userRoutes from './routes/users.js';
 import analyticsRoutes from './routes/analytics.js';
 import tradingRoutes from './routes/trading.js';
+import dashboardRoutes from './routes/dashboard.js';
+import syncRoutes from './routes/sync.js';
 
 dotenv.config();
 
@@ -71,11 +73,13 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/signals', authMiddleware, signalRoutes);
 app.use('/api/positions', authMiddleware, positionRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/analytics', authMiddleware, analyticsRoutes);
 app.use('/api/trading', authMiddleware, tradingRoutes);
+app.use('/api/sync', syncRoutes);
 
 // 404 handler
 app.use((req, res) => {
